@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analitik Geometri — v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08090c;--s1:#0f1117;--s2:#161a24;--s3:#1e2332;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);--border3:rgba(255,255,255,0.18);
+  --a1:#6c63ff;--a2:#00e5a0;--a3:#ff8c42;--a4:#ff4d6d;--a5:#4dc9f6;
+  --text:#eef0f8;--muted:#6b7494;--muted2:#9299b5;
+  --mono:'JetBrains Mono',monospace;--sans:'Space Grotesk',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:0.4}
+.blob{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
+.blob1{width:500px;height:500px;background:rgba(108,99,255,0.07);top:-200px;left:-150px}
+.blob2{width:400px;height:400px;background:rgba(0,229,160,0.05);bottom:-100px;right:-100px}
+
+header{position:relative;z-index:10;padding:1.5rem 2.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1.5rem;background:rgba(8,9,12,0.85);backdrop-filter:blur(20px);flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:0.75rem}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--a1),var(--a2));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+header h1{font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;background:linear-gradient(90deg,#fff 0%,var(--muted2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.badge{font-size:0.67rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;background:rgba(108,99,255,0.15);color:var(--a1);border:1px solid rgba(108,99,255,0.25);padding:0.2rem 0.65rem;border-radius:2rem;margin-left:auto}
+
+.tabs{position:relative;z-index:10;display:flex;border-bottom:1px solid var(--border);background:rgba(8,9,12,0.6);backdrop-filter:blur(10px);padding:0 2rem;overflow-x:auto}
+.tab{padding:0.75rem 1.1rem;font-size:0.8rem;font-weight:600;letter-spacing:0.03em;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color 0.2s,border-color 0.2s;white-space:nowrap;user-select:none}
+.tab:hover{color:var(--muted2)}
+.tab.active{color:var(--text);border-bottom-color:var(--a1)}
+.tab.quiz-tab{color:var(--a2) !important;opacity:0.7}
+.tab.quiz-tab.active{opacity:1;border-bottom-color:var(--a2)}
+
+.layout{position:relative;z-index:1;display:grid;grid-template-columns:400px 1fr;min-height:calc(100vh - 108px)}
+.panel{border-right:1px solid var(--border);background:rgba(15,17,23,0.5);padding:1.5rem;display:flex;flex-direction:column;gap:1.1rem;overflow-y:auto}
+.section-label{font-size:0.63rem;font-weight:700;letter-spacing:0.13em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem}
+
+.point-block{background:var(--s2);border:1px solid var(--border2);border-radius:14px;padding:0.9rem 1rem;transition:border-color 0.2s}
+.point-block:focus-within{border-color:rgba(108,99,255,0.4)}
+.point-header{display:flex;align-items:center;gap:0.6rem;margin-bottom:0.75rem}
+.point-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.point-dot.a{background:var(--a1)}.point-dot.b{background:var(--a3)}.point-dot.c{background:var(--a4)}.point-dot.d{background:var(--a2)}
+.point-name{font-family:var(--mono);font-size:0.83rem;font-weight:700}
+.point-name.a{color:var(--a1)}.point-name.b{color:var(--a3)}.point-name.c{color:var(--a4)}.point-name.d{color:var(--a2)}
+.coord-row{display:flex;gap:0.55rem}
+.coord-wrap{position:relative;flex:1}
+.coord-wrap label{position:absolute;top:7px;left:9px;font-family:var(--mono);font-size:0.58rem;color:var(--muted);pointer-events:none;letter-spacing:0.05em;z-index:1}
+.coord-wrap input{width:100%;background:var(--s3);border:1px solid var(--border2);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:0.95rem;font-weight:500;padding:1.2rem 0.7rem 0.35rem;outline:none;transition:border-color 0.2s,background 0.2s;-moz-appearance:textfield}
+.coord-wrap input::-webkit-inner-spin-button,.coord-wrap input::-webkit-outer-spin-button{-webkit-appearance:none}
+.coord-wrap input:focus{border-color:var(--a1);background:rgba(108,99,255,0.06)}
+
+.calc-btn{width:100%;padding:0.8rem;background:linear-gradient(135deg,var(--a1),#8b84ff);color:#fff;border:none;border-radius:12px;font-family:var(--sans);font-size:0.88rem;font-weight:700;cursor:pointer;letter-spacing:0.02em;position:relative;overflow:hidden;transition:transform 0.15s}
+.calc-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent);opacity:0;transition:opacity 0.2s}
+.calc-btn:hover::before{opacity:1}
+.calc-btn:active{transform:scale(0.98)}
+
+.error{background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.25);border-radius:9px;color:#ff8fa3;font-size:0.78rem;padding:0.55rem 0.85rem;display:none}
+.error.show{display:block}
+
+.results{display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;display:none}
+.rcard{background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:0.8rem 0.9rem;opacity:0;transform:translateY(10px) scale(0.97);transition:opacity 0.35s ease,transform 0.35s ease,border-color 0.2s}
+.rcard.show{opacity:1;transform:translateY(0) scale(1)}
+.rcard:hover{border-color:var(--border3)}
+.rcard.full{grid-column:1/-1}
+.rcard.highlight{border-color:rgba(108,99,255,0.35);background:rgba(108,99,255,0.07)}
+.rcard.highlight2{border-color:rgba(0,229,160,0.3);background:rgba(0,229,160,0.05)}
+.rcard.highlight3{border-color:rgba(255,140,66,0.3);background:rgba(255,140,66,0.05)}
+.rcard.highlight4{border-color:rgba(77,201,246,0.3);background:rgba(77,201,246,0.05)}
+.rl{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.35rem}
+.rv{font-family:var(--mono);font-size:0.88rem;font-weight:500;color:var(--text);word-break:break-all;line-height:1.4}
+.rv.big{font-size:1rem;font-weight:700;color:#fff}
+
+.steps-panel{background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:0.9rem 1rem;display:none;flex-direction:column;gap:0.45rem}
+.steps-panel.show{display:flex}
+.step-item{display:flex;gap:0.7rem;align-items:flex-start;opacity:0;transform:translateX(-8px);transition:opacity 0.3s,transform 0.3s}
+.step-item.show{opacity:1;transform:translateX(0)}
+.step-num{width:19px;height:19px;border-radius:50%;background:rgba(108,99,255,0.2);border:1px solid rgba(108,99,255,0.3);color:var(--a1);font-size:0.63rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-text{font-size:0.78rem;color:var(--muted2);line-height:1.55}
+.step-text strong{color:var(--text);font-weight:600}
+
+/* CANVAS */
+.canvas-area{position:relative;overflow:hidden;background:var(--s1)}
+#plane{display:block;width:100%;height:100%}
+.legend{position:absolute;top:1rem;right:1rem;background:rgba(8,9,12,0.85);backdrop-filter:blur(12px);border:1px solid var(--border2);border-radius:10px;padding:0.65rem 0.85rem;display:flex;flex-direction:column;gap:0.4rem;font-size:0.7rem;opacity:0;transition:opacity 0.4s}
+.legend.show{opacity:1}
+.legend-item{display:flex;align-items:center;gap:0.5rem;color:var(--muted2)}
+.legend-line{width:16px;height:2px;border-radius:1px;flex-shrink:0}
+
+/* ── QUIZ ── */
+#tab-quiz{display:none}
+.quiz-wrap{display:flex;flex-direction:column;gap:1rem}
+.quiz-header{display:flex;align-items:center;justify-content:space-between;gap:0.5rem}
+.quiz-score{font-size:0.75rem;color:var(--muted2);font-family:var(--mono)}
+.quiz-score span{color:var(--a2);font-weight:700}
+.quiz-card{background:var(--s2);border:1px solid var(--border2);border-radius:14px;padding:1.1rem 1.1rem}
+.quiz-q{font-size:0.83rem;color:var(--text);line-height:1.6;margin-bottom:0.85rem}
+.quiz-q strong{color:var(--a5)}
+.quiz-options{display:flex;flex-direction:column;gap:0.5rem}
+.quiz-opt{background:var(--s3);border:1px solid var(--border2);border-radius:9px;padding:0.65rem 0.9rem;font-family:var(--mono);font-size:0.82rem;color:var(--muted2);cursor:pointer;transition:border-color 0.18s,background 0.18s,color 0.18s;text-align:left}
+.quiz-opt:hover:not(:disabled){border-color:rgba(108,99,255,0.4);color:var(--text);background:rgba(108,99,255,0.08)}
+.quiz-opt.correct{border-color:rgba(0,229,160,0.5);background:rgba(0,229,160,0.1);color:#00e5a0}
+.quiz-opt.wrong{border-color:rgba(255,77,109,0.4);background:rgba(255,77,109,0.08);color:#ff8fa3}
+.quiz-opt:disabled{cursor:default}
+.quiz-feedback{font-size:0.78rem;padding:0.6rem 0.85rem;border-radius:9px;margin-top:0.1rem;display:none}
+.quiz-feedback.show{display:block}
+.quiz-feedback.ok{background:rgba(0,229,160,0.1);border:1px solid rgba(0,229,160,0.25);color:#00e5a0}
+.quiz-feedback.fail{background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.25);color:#ff8fa3}
+.quiz-next-btn{width:100%;padding:0.72rem;background:var(--s3);border:1px solid var(--border2);border-radius:10px;color:var(--muted2);font-family:var(--sans);font-size:0.83rem;font-weight:600;cursor:pointer;transition:border-color 0.2s,color 0.2s;display:none}
+.quiz-next-btn.show{display:block}
+.quiz-next-btn:hover{border-color:var(--border3);color:var(--text)}
+.quiz-badge{display:inline-flex;align-items:center;gap:0.35rem;font-size:0.65rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;padding:0.18rem 0.55rem;border-radius:2rem}
+.quiz-badge.easy{background:rgba(0,229,160,0.15);color:var(--a2);border:1px solid rgba(0,229,160,0.2)}
+.quiz-badge.medium{background:rgba(255,140,66,0.15);color:var(--a3);border:1px solid rgba(255,140,66,0.2)}
+.quiz-badge.hard{background:rgba(255,77,109,0.15);color:var(--a4);border:1px solid rgba(255,77,109,0.2)}
+.progress-bar{height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--a1),var(--a2));border-radius:2px;transition:width 0.4s ease}
+
+@media(max-width:850px){
+  .layout{grid-template-columns:1fr}
+  .canvas-area{height:300px}
+  .panel{border-right:none;border-bottom:1px solid var(--border)}
+  .results{grid-template-columns:1fr}
+  .rcard.full{grid-column:auto}
+}
+</style>
+</head>
+<body>
+<div class="blob blob1"></div><div class="blob blob2"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📐</div>
+    <h1>Analitik Geometri</h1>
+  </div>
+  <span class="badge">11. Sınıf</span>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('iki')">İki Nokta</div>
+  <div class="tab" onclick="switchTab('dik')">Dik Doğru</div>
+  <div class="tab" onclick="switchTab('kesisim')">Kesişim</div>
+  <div class="tab" onclick="switchTab('uzaklik')">Nokta–Doğru Uzaklığı</div>
+  <div class="tab" onclick="switchTab('eksen')">Eksen Kesimleri</div>
+  <div class="tab quiz-tab" onclick="switchTab('quiz')">⚡ Quiz</div>
+</div>
+
+<div class="layout">
+<div class="panel" id="panel">
+
+<!-- ══ İKİ NOKTA ══════════════════════════════════════════════════ -->
+<div id="tab-iki">
+  <div class="section-label">Koordinat Girişi</div>
+  <div class="point-block">
+    <div class="point-header"><div class="point-dot a"></div><span class="point-name a">A Noktası</span></div>
+    <div class="coord-row">
+      <div class="coord-wrap"><label>x₁</label><input type="number" id="x1" value="1" step="0.5"></div>
+      <div class="coord-wrap"><label>y₁</label><input type="number" id="y1" value="2" step="0.5"></div>
+    </div>
+  </div>
+  <div class="point-block">
+    <div class="point-header"><div class="point-dot b"></div><span class="point-name b">B Noktası</span></div>
+    <div class="coord-row">
+      <div class="coord-wrap"><label>x₂</label><input type="number" id="x2" value="5" step="0.5"></div>
+      <div class="coord-wrap"><label>y₂</label><input type="number" id="y2" value="6" step="0.5"></div>
+    </div>
+  </div>
+  <div class="error" id="err1">A ve B noktaları aynı olamaz!</div>
+  <button class="calc-btn" onclick="calcIki()">Hesapla →</button>
+  <div class="results" id="res-iki">
+    <div class="rcard full highlight"><div class="rl">Doğrunun Denklemi</div><div class="rv big" id="rv-eq">—</div></div>
+    <div class="rcard"><div class="rl">Mesafe |AB|</div><div class="rv" id="rv-dist">—</div></div>
+    <div class="rcard"><div class="rl">Eğim (m)</div><div class="rv" id="rv-slope">—</div></div>
+    <div class="rcard"><div class="rl">Orta Nokta</div><div class="rv" id="rv-mid">—</div></div>
+    <div class="rcard"><div class="rl">Ort. Değişim Hızı</div><div class="rv" id="rv-avg">—</div></div>
+    <div class="rcard"><div class="rl">Eğim Açısı</div><div class="rv" id="rv-ang">—</div></div>
+  </div>
+  <div class="steps-panel" id="steps-iki"></div>
+</div>
+
+<!-- ══ DİK DOĞRU ═════════════════════════════════════════════════ -->
+<div id="tab-dik" style="display:none">
+  <div class="section-label">Dik Doğru — Nokta + Asıl Eğim</div>
+  <div class="point-block">
+    <div class="point-header"><div class="point-dot a"></div><span class="point-name a">Nokta P</span></div>
+    <div class="coord-row">
+      <div class="coord-wrap"><label>x</label><input type="number" id="dx1" value="2" step="0.5"></div>
+      <div class="coord-wrap"><label>y</label><input type="number" id="dy1" value="3" step="0.5"></div>
+    </div>
+  </div>
+  <div class="point-block">
+    <div class="point-header"><div class="point-dot b"></div><span class="point-name b">Asıl Doğrunun Eğimi</span></div>
+    <div class="coord-row"><div class="coord-wrap"><label>m₁</label><input type="number" id="dm1" value="2" step="0.5"></div></div>
+  </div>
+  <button class="calc-btn" onclick="calcDik()">Hesapla →</button>
+  <div class="results" id="res-dik">
+    <div class="rcard full highlight"><div class="rl">Dik Doğrunun Denklemi</div><div class="rv big" id="rv-deq">—</div></div>
+    <div class="rcard"><div class="rl">Dik Eğim (m⊥)</div><div class="rv" id="rv-dm">—</div></div>
+    <div class="rcard highlight2"><div class="rl">Dik Açı Koşulu</div><div class="rv" id="rv-drel">—</div></div>
+  </div>
+  <div class="steps-panel" id="steps-dik"></div>
+</div>
+
+<!-- ══ KESİŞİM ═══════════════════════════════════════════════════ -->
+<div id="tab-kesisim" style="display:none">
+  <div class="section-label">İki Doğrunun Kesişimi</div>
+  <div class="point-block">
+    <div class="point-header"><div class="point-dot a"></div><span class="point-name a">1. Doğru</span></div>
+    <div class="coord-row" style="margin-bottom:0.5rem">
+      <div class="coord-wrap"><label>x₁</label><input type="number" id="kx1" value="0" step="0.5"></div>
+      <div class="coord-wrap"><label>y₁</label><input type="number" id="ky1" value="1" step="0.5"></div>
+    </div>
+    <div class="coord-row">
+      <div class="coord-wrap"><label>x₂</label><input type="number" id="kx2" value="4" step="0.5"></div>
+      <div class="coord-wrap"><label>y₂</label><input type="number" id="ky2" value="3" step="0.5"></div>
+    </div>
+  </div>
+  <div class="point-block">
+    <div class="point-header"><div class="point-dot b"></div><span class="point-name b">2. Doğru</span></div>
+    <div class="coord-row" style="margin-bottom:0.5rem">
+      <div class="coord-wrap"><label>x₃</label><input type="number" id="kx3" value="0" step="0.5"></div>
+      <div class="coord-wrap"><label>y₃</label><input type="number" id="ky3" value="5" step="0.5"></div>
+    </div>
+    <div class="coord-row">
+      <div class="coord-wrap"><label>x₄</label><input type="number" id="kx4" value="4" step="0.5"></div>
+      <div class="coord-wrap"><label>y₄</label><input type="number" id="ky4" value="1" step="0.5"></div>
+    </div>
+  </div>
+  <div class="error" id="err2"></div>
+  <button class="calc-btn" onclick="calcKesisim()">Hesapla →</button>
+  <div class="results" id="res-kes">
+    <div class="rcard full highlight"><div class="rl">1. Doğru</div><div class="rv" id="rv-keq1">—</div></div>
+    <div class="rcard full highlight3"><div class="rl">2. Doğru</div><div class="rv" id="rv-keq2">—</div></div>
+    <div class="rcard full highlight2"><div class="rl">Kesişim Noktası</div><div class="rv big" id="rv-kp">—</div></div>
+    <div class="rcard"><div class="rl">m₁</div><div class="rv" id="rv-ka1">—</div></div>
+    <div class="rcard"><div class="rl">m₂</div><div class="rv" id="rv-ka2">—</div></div>
+    <div class="rcard full"><div class="rl">Aralarındaki Açı</div><div class="rv" id="rv-kang">—</div></div>
+  </div>
+  <div class="steps-panel" id="steps-kes"></div>
+</div>
+
+<!-- ══ UZAKLIK ════════════════════════════════════════════════════ -->
+<div id="tab-uzaklik" style="display:none">
+  <div class="section-label">Nokta–Doğru Uzaklığı</div>
+  <div class="point-block">
+    <div class="point-header"><div class="point-dot c"></div><span class="point-name c">Nokta P</span></div>
+    <div class="coord-row">
+      <div class="coord-wrap"><label>x₀</label><input type="number" id="ux0" value="3" step="0.5"></div>
+      <div class="coord-wrap"><label>y₀</label><input type="number" id="uy0" value="4" step="0.5"></div>
+    </div>
+  </div>
+  <div class="point-block">
+    <div class="point-header"><div class="point-dot a"></div><span class="point-name a">Doğru: ax + by + c = 0</span></div>
+    <div class="coord-row">
+      <div class="coord-wrap"><label>a</label><input type="number" id="ua" value="3" step="0.5"></div>
+      <div class="coord-wrap"><label>b</label><input type="number" id="ub" value="-4" step="0.5"></div>
+      <div class="coord-wrap"><label>c</label><input type="number" id="uc" value="5" step="0.5"></div>
+    </div>
+  </div>
+  <div class="error" id="err3">a ve b aynı anda sıfır olamaz!</div>
+  <button class="calc-btn" onclick="calcUzaklik()">Hesapla →</button>
+  <div class="results" id="res-uzak">
+    <div class="rcard full highlight4"><div class="rl">Nokta–Doğru Uzaklığı</div><div class="rv big" id="rv-uzak">—</div></div>
+    <div class="rcard full highlight"><div class="rl">Formül</div><div class="rv" id="rv-uzak-form">—</div></div>
+    <div class="rcard"><div class="rl">Pay |ax₀+by₀+c|</div><div class="rv" id="rv-uzak-pay">—</div></div>
+    <div class="rcard"><div class="rl">Payda √(a²+b²)</div><div class="rv" id="rv-uzak-pay2">—</div></div>
+    <div class="rcard full"><div class="rl">En Yakın Nokta (Dike İzdüşüm)</div><div class="rv" id="rv-uzak-foot">—</div></div>
+  </div>
+  <div class="steps-panel" id="steps-uzak"></div>
+</div>
+
+<!-- ══ EKSEN KESİMLERİ ════════════════════════════════════════════ -->
+<div id="tab-eksen" style="display:none">
+  <div class="section-label">Doğrunun Eksen Kesimleri</div>
+  <div class="point-block">
+    <div class="point-header"><div class="point-dot a"></div><span class="point-name a">A Noktası</span></div>
+    <div class="coord-row">
+      <div class="coord-wrap"><label>x₁</label><input type="number" id="ex1" value="2" step="0.5"></div>
+      <div class="coord-wrap"><label>y₁</label><input type="number" id="ey1" value="1" step="0.5"></div>
+    </div>
+  </div>
+  <div class="point-block">
+    <div class="point-header"><div class="point-dot b"></div><span class="point-name b">B Noktası</span></div>
+    <div class="coord-row">
+      <div class="coord-wrap"><label>x₂</label><input type="number" id="ex2" value="5" step="0.5"></div>
+      <div class="coord-wrap"><label>y₂</label><input type="number" id="ey2" value="4" step="0.5"></div>
+    </div>
+  </div>
+  <div class="error" id="err4">A ve B aynı olamaz!</div>
+  <button class="calc-btn" onclick="calcEksen()">Hesapla →</button>
+  <div class="results" id="res-eksen">
+    <div class="rcard full highlight"><div class="rl">Doğrunun Denklemi</div><div class="rv big" id="rv-eeq">—</div></div>
+    <div class="rcard highlight3"><div class="rl">x-ekseni Kesimi (y=0)</div><div class="rv" id="rv-xkes">—</div></div>
+    <div class="rcard highlight2"><div class="rl">y-ekseni Kesimi (x=0)</div><div class="rv" id="rv-ykes">—</div></div>
+    <div class="rcard full"><div class="rl">Eksen Arası Parça Uzunluğu</div><div class="rv" id="rv-ekpar">—</div></div>
+    <div class="rcard full"><div class="rl">Kesim Noktaları ile Üçgen Alanı</div><div class="rv" id="rv-ekalan">—</div></div>
+  </div>
+  <div class="steps-panel" id="steps-eksen"></div>
+</div>
+
+<!-- ══ QUIZ ═══════════════════════════════════════════════════════ -->
+<div id="tab-quiz" style="display:none">
+  <div class="quiz-wrap">
+    <div class="quiz-header">
+      <div class="section-label" style="margin:0">Quiz Modu</div>
+      <div class="quiz-score">Skor: <span id="qscore">0</span> / <span id="qtotal">0</span></div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="qprogress" style="width:0%"></div></div>
+    <div class="quiz-card" id="quiz-card">
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem">
+        <span class="quiz-badge" id="q-difficulty">Kolay</span>
+        <span style="font-size:0.68rem;color:var(--muted);font-family:var(--mono)" id="q-type-label">—</span>
+      </div>
+      <div class="quiz-q" id="q-text">Quiz başlatmak için aşağıdaki butona tıkla!</div>
+      <div class="quiz-options" id="q-opts"></div>
+      <div class="quiz-feedback" id="q-feedback"></div>
+    </div>
+    <button class="quiz-next-btn show" id="q-next-btn" onclick="nextQuestion()">Soruyu Başlat →</button>
+  </div>
+</div>
+
+</div><!-- /panel -->
+
+<!-- CANVAS -->
+<div class="canvas-area">
+  <canvas id="plane"></canvas>
+  <div class="legend" id="legend">
+    <div class="legend-item"><div class="legend-line" style="background:var(--a1)"></div><span id="leg1">—</span></div>
+    <div class="legend-item" id="leg2-row" style="display:none"><div class="legend-line" style="background:var(--a3)"></div><span id="leg2">—</span></div>
+    <div class="legend-item" id="leg3-row" style="display:none"><div class="legend-line" style="background:var(--a2);opacity:0.7"></div><span id="leg3">—</span></div>
+  </div>
+</div>
+</div><!-- /layout -->
+
+<script>
+const canvas=document.getElementById('plane');
+const ctx=canvas.getContext('2d');
+const dpr=devicePixelRatio||1;
+let drawState=null,animT=0,animRaf=null,currentTab='iki';
+
+function resize(){
+  const w=canvas.parentElement.clientWidth,h=canvas.parentElement.clientHeight;
+  canvas.width=w*dpr;canvas.height=h*dpr;
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  renderFrame(animT);
+}
+window.addEventListener('resize',resize);
+
+function switchTab(t){
+  currentTab=t;
+  const ids=['iki','dik','kesisim','uzaklik','eksen','quiz'];
+  ids.forEach(id=>document.getElementById('tab-'+id).style.display=id===t?'block':'none');
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',ids[i]===t));
+  if(t!=='quiz'){drawState=null;animT=0;cancelAnimationFrame(animRaf);document.getElementById('legend').classList.remove('show');renderFrame(0);}
+}
+
+// ── MATH HELPERS ──────────────────────────────────────────────────
+function gcd(a,b){return b===0?a:gcd(b,a%b)}
+function fr(n,d=4){return parseFloat((Math.round(n*10000)/10000).toFixed(d))}
+function slopeStr(dy,dx){
+  if(Math.abs(dx)<1e-9)return'∞';
+  if(Math.abs(dy)<1e-9)return'0';
+  for(const d of[1,2,3,4,5,6,8,10,12]){
+    const num=Math.round(dy/dx*d);
+    if(Math.abs(num/d-dy/dx)<1e-9){const g=gcd(Math.abs(num),d);return d/g===1?`${num/g}`:`${num/g}/${d/g}`;}
+  }
+  return fr(dy/dx,4).toString();
+}
+function eqStr(x1,y1,x2,y2){
+  const dx=x2-x1,dy=y2-y1;
+  if(Math.abs(dx)<1e-9)return`x = ${fr(x1,3)}`;
+  if(Math.abs(dy)<1e-9)return`y = ${fr(y1,3)}`;
+  const m=dy/dx,b=y1-m*x1;
+  const mStr=slopeStr(dy,dx);
+  let eq=`y = ${mStr==='1'?'':mStr==='-1'?'-':mStr}x`;
+  const br=fr(b,4);
+  if(Math.abs(br)>1e-9)eq+=br>0?` + ${fr(br,3)}`:` - ${fr(Math.abs(br),3)}`;
+  return eq;
+}
+function lineFromTwoPoints(x1,y1,x2,y2){
+  const dx=x2-x1,dy=y2-y1;
+  if(Math.abs(dx)<1e-9)return{vertical:true,x:x1};
+  const m=dy/dx;return{m,b:y1-m*x1};
+}
+function intersect(L1,L2){
+  if(L1.vertical&&L2.vertical)return null;
+  if(L1.vertical){const x=L1.x;return{x,y:L2.m*x+L2.b}}
+  if(L2.vertical){const x=L2.x;return{x,y:L1.m*x+L1.b}}
+  if(Math.abs(L1.m-L2.m)<1e-9)return null;
+  const x=(L2.b-L1.b)/(L1.m-L2.m);return{x,y:L1.m*x+L1.b};
+}
+
+// ── RESULTS + STEPS ───────────────────────────────────────────────
+function showResults(id,data){
+  const res=document.getElementById(id);res.style.display='grid';
+  Object.entries(data).forEach(([k,v])=>{const el=document.getElementById(k);if(el)el.textContent=v;});
+  res.querySelectorAll('.rcard').forEach((c,i)=>{c.classList.remove('show');setTimeout(()=>c.classList.add('show'),i*55);});
+}
+function buildSteps(id,steps){
+  const el=document.getElementById(id);el.innerHTML='';el.classList.add('show');
+  steps.forEach((s,i)=>{
+    const d=document.createElement('div');d.className='step-item';
+    d.innerHTML=`<div class="step-num">${i+1}</div><div class="step-text">${s}</div>`;
+    el.appendChild(d);setTimeout(()=>d.classList.add('show'),80+i*75);
+  });
+}
+
+// ── TAB 1: İKİ NOKTA ─────────────────────────────────────────────
+function calcIki(){
+  const x1=+document.getElementById('x1').value,y1=+document.getElementById('y1').value;
+  const x2=+document.getElementById('x2').value,y2=+document.getElementById('y2').value;
+  const err=document.getElementById('err1');
+  if(x1===x2&&y1===y2){err.classList.add('show');return}err.classList.remove('show');
+  const dx=x2-x1,dy=y2-y1;
+  const dist=Math.sqrt(dx*dx+dy*dy);
+  const mx=(x1+x2)/2,my=(y1+y2)/2;
+  const ang=Math.atan2(dy,dx)*180/Math.PI;
+  showResults('res-iki',{'rv-eq':eqStr(x1,y1,x2,y2),'rv-dist':`|AB| = ${fr(dist,4)}`,'rv-slope':`m = ${slopeStr(dy,dx)}`,'rv-mid':`M(${fr(mx,3)}, ${fr(my,3)})`,'rv-avg':Math.abs(dx)<1e-9?'Δx = 0 — tanımsız':`Δy/Δx = ${fr(dy/dx,4)}`,'rv-ang':`α ≈ ${fr(ang,2)}°`});
+  buildSteps('steps-iki',[`<strong>Δx</strong> = ${x2}−${x1} = <strong>${dx}</strong>`,`<strong>Δy</strong> = ${y2}−${y1} = <strong>${dy}</strong>`,`<strong>Eğim:</strong> m = Δy/Δx = <strong>${slopeStr(dy,dx)}</strong>`,`<strong>Mesafe:</strong> √(${dx}²+${dy}²) = √${dx*dx+dy*dy} ≈ <strong>${fr(dist,4)}</strong>`,`<strong>Denklem:</strong> y−${y1}=m(x−${x1}) → <strong>${eqStr(x1,y1,x2,y2)}</strong>`]);
+  setLegend(eqStr(x1,y1,x2,y2),null,`Orta nokta M(${fr(mx,2)},${fr(my,2)})`);
+  drawState={type:'iki',A:{x:x1,y:y1},B:{x:x2,y:y2}};animateCanvas();
+}
+
+// ── TAB 2: DİK DOĞRU ─────────────────────────────────────────────
+function calcDik(){
+  const px=+document.getElementById('dx1').value,py=+document.getElementById('dy1').value;
+  const m1=+document.getElementById('dm1').value;
+  let mPerp,mpStr,relStr,eqPerp;
+  if(Math.abs(m1)<1e-9){mPerp=Infinity;mpStr='∞ (dikey)';relStr='m₁=0 → dik doğru dikeydir';eqPerp=`x = ${fr(px,3)}`;}
+  else{mPerp=-1/m1;mpStr=slopeStr(-1,m1);relStr=`m₁×m⊥ = ${fr(m1,3)}×${fr(mPerp,4)} ≈ −1 ✓`;const b=py-mPerp*px;const ms=slopeStr(-1,m1);let eq=`y = ${ms==='1'?'':ms==='-1'?'-':ms}x`;if(Math.abs(b)>1e-9)eq+=b>0?` + ${fr(b,3)}`:` - ${fr(Math.abs(b),3)}`;eqPerp=eq;}
+  showResults('res-dik',{'rv-deq':eqPerp,'rv-dm':`m⊥ = ${mpStr}`,'rv-drel':relStr});
+  buildSteps('steps-dik',[`Asıl doğrunun eğimi: <strong>m₁ = ${fr(m1,3)}</strong>`,`Dik doğru koşulu: <strong>m₁ × m⊥ = −1</strong>`,`m⊥ = −1 / ${fr(m1,3)} = <strong>${mpStr}</strong>`,`P(${px},${py}) noktasından geçen denklem: <strong>${eqPerp}</strong>`]);
+  const origLine={m:m1,b:py-m1*px};
+  const perpLine=mPerp===Infinity?{vertical:true,x:px}:{m:mPerp,b:py-mPerp*px};
+  setLegend(`y=${fr(m1,2)}x+${fr(py-m1*px,2)} (asıl)`,eqPerp+' (dik)',null);
+  drawState={type:'dik',P:{x:px,y:py},origLine,perpLine};animateCanvas();
+}
+
+// ── TAB 3: KESİŞİM ────────────────────────────────────────────────
+function calcKesisim(){
+  const x1=+document.getElementById('kx1').value,y1=+document.getElementById('ky1').value;
+  const x2=+document.getElementById('kx2').value,y2=+document.getElementById('ky2').value;
+  const x3=+document.getElementById('kx3').value,y3=+document.getElementById('ky3').value;
+  const x4=+document.getElementById('kx4').value,y4=+document.getElementById('ky4').value;
+  const err=document.getElementById('err2');
+  const L1=lineFromTwoPoints(x1,y1,x2,y2),L2=lineFromTwoPoints(x3,y3,x4,y4);
+  const pt=intersect(L1,L2);
+  const m1Str=L1.vertical?'∞':slopeStr(y2-y1,x2-x1);
+  const m2Str=L2.vertical?'∞':slopeStr(y4-y3,x4-x3);
+  if(!pt){err.style.display='block';err.textContent=L1.vertical&&L2.vertical?'Her iki doğru da dikey ve paralel!':'Doğrular paraleldir, kesişmez!';return;}
+  err.style.display='none';
+  let angBetween='—';
+  if(!L1.vertical&&!L2.vertical){
+    const denom=1+L1.m*L2.m;
+    if(Math.abs(denom)<1e-9)angBetween='90° (dik)';
+    else{const tanA=Math.abs((L2.m-L1.m)/denom);angBetween=fr(Math.atan(tanA)*180/Math.PI,2)+'°';}
+  }
+  showResults('res-kes',{'rv-keq1':eqStr(x1,y1,x2,y2),'rv-keq2':eqStr(x3,y3,x4,y4),'rv-kp':`K(${fr(pt.x,4)}, ${fr(pt.y,4)})`,'rv-ka1':`m₁ = ${m1Str}`,'rv-ka2':`m₂ = ${m2Str}`,'rv-kang':`θ ≈ ${angBetween}`});
+  buildSteps('steps-kes',[`1. doğru: <strong>${eqStr(x1,y1,x2,y2)}</strong>`,`2. doğru: <strong>${eqStr(x3,y3,x4,y4)}</strong>`,`Denklem sistemi çözülür: x = <strong>${fr(pt.x,4)}</strong>`,`y değeri hesaplanır: y = <strong>${fr(pt.y,4)}</strong>`,`Kesişim: <strong>K(${fr(pt.x,4)}, ${fr(pt.y,4)})</strong>`]);
+  setLegend(eqStr(x1,y1,x2,y2),eqStr(x3,y3,x4,y4),`K(${fr(pt.x,3)},${fr(pt.y,3)})`);
+  drawState={type:'kesisim',L1,L2,pt,P1a:{x:x1,y:y1},P1b:{x:x2,y:y2},P2a:{x:x3,y:y3},P2b:{x:x4,y:y4}};animateCanvas();
+}
+
+// ── TAB 4: UZAKLIK ────────────────────────────────────────────────
+function calcUzaklik(){
+  const x0=+document.getElementById('ux0').value,y0=+document.getElementById('uy0').value;
+  const a=+document.getElementById('ua').value,b=+document.getElementById('ub').value,c=+document.getElementById('uc').value;
+  const err=document.getElementById('err3');
+  if(Math.abs(a)<1e-9&&Math.abs(b)<1e-9){err.classList.add('show');return;}err.classList.remove('show');
+  const pay=a*x0+b*y0+c;
+  const paydaKare=a*a+b*b;
+  const payda=Math.sqrt(paydaKare);
+  const dist=Math.abs(pay)/payda;
+  // foot of perpendicular
+  const t=-pay/paydaKare;
+  const fx=x0+a*t,fy=y0+b*t;
+  // line from ax+by+c=0
+  let lineObj;
+  if(Math.abs(b)<1e-9){lineObj={vertical:true,x:-c/a};}
+  else{lineObj={m:-a/b,b:-c/b};}
+  showResults('res-uzak',{
+    'rv-uzak':`d = ${fr(dist,4)}`,
+    'rv-uzak-form':`d = |${fr(a)}·${fr(x0)}+${fr(b)}·${fr(y0)}+${fr(c)}| / √(${fr(a)}²+${fr(b)}²)`,
+    'rv-uzak-pay':`|${fr(pay,3)}| = ${fr(Math.abs(pay),3)}`,
+    'rv-uzak-pay2':`√${fr(paydaKare,3)} = ${fr(payda,4)}`,
+    'rv-uzak-foot':`H(${fr(fx,4)}, ${fr(fy,4)})`
+  });
+  buildSteps('steps-uzak',[
+    `Doğru: <strong>${fr(a)}x + ${fr(b)}y + ${fr(c)} = 0</strong>`,
+    `Nokta: <strong>P(${x0}, ${y0})</strong>`,
+    `Formül: d = |ax₀ + by₀ + c| / √(a² + b²)`,
+    `Pay = |${fr(a)}·${x0} + ${fr(b)}·${y0} + ${fr(c)}| = <strong>${fr(Math.abs(pay),3)}</strong>`,
+    `Payda = √(${fr(a)}²+${fr(b)}²) = √${fr(paydaKare,3)} = <strong>${fr(payda,4)}</strong>`,
+    `d = ${fr(Math.abs(pay),3)} / ${fr(payda,4)} = <strong>${fr(dist,4)}</strong>`
+  ]);
+  setLegend(`${fr(a)}x+${fr(b)}y+${fr(c)}=0`,null,`P(${x0},${y0}) → d=${fr(dist,4)}`);
+  drawState={type:'uzaklik',P:{x:x0,y:y0},line:lineObj,foot:{x:fx,y:fy},dist};animateCanvas();
+}
+
+// ── TAB 5: EKSEN KESİMLERİ ────────────────────────────────────────
+function calcEksen(){
+  const x1=+document.getElementById('ex1').value,y1=+document.getElementById('ey1').value;
+  const x2=+document.getElementById('ex2').value,y2=+document.getElementById('ey2').value;
+  const err=document.getElementById('err4');
+  if(x1===x2&&y1===y2){err.classList.add('show');return;}err.classList.remove('show');
+  const dx=x2-x1,dy=y2-y1;
+  let xKes,yKes,xKesStr,yKesStr,parStr,alanStr;
+  const L=lineFromTwoPoints(x1,y1,x2,y2);
+  if(L.vertical){
+    xKesStr=`(${fr(L.x,3)}, 0)`;yKesStr='Yok (dikey doğru)';parStr='—';alanStr='—';
+    xKes={x:L.x,y:0};yKes=null;
+  } else {
+    // x-kesim: y=0 → x = -b/m
+    const xk=-L.b/L.m;
+    // y-kesim: x=0 → y = b
+    const yk=L.b;
+    xKes={x:xk,y:0};yKes={x:0,y:yk};
+    xKesStr=`(${fr(xk,4)}, 0)`;
+    yKesStr=`(0, ${fr(yk,4)})`;
+    if(Math.abs(xk)<1e-9||Math.abs(yk)<1e-9){parStr='0 (orijinden geçiyor)';alanStr='0';}
+    else{
+      const par=Math.sqrt(xk*xk+yk*yk);
+      parStr=fr(par,4).toString();
+      const alan=Math.abs(xk*yk)/2;
+      alanStr=fr(alan,4)+' br²';
+    }
+  }
+  showResults('res-eksen',{'rv-eeq':eqStr(x1,y1,x2,y2),'rv-xkes':xKesStr,'rv-ykes':yKesStr,'rv-ekpar':parStr,'rv-ekalan':alanStr});
+  buildSteps('steps-eksen',[
+    `Doğru denklemi: <strong>${eqStr(x1,y1,x2,y2)}</strong>`,
+    L.vertical?`Dikey doğru → sadece x-eksenini (${fr(L.x,3)}, 0)'da keser`:`x-ekseni kesimi: y=0 koy → <strong>(${fr(-L.b/L.m,4)}, 0)</strong>`,
+    L.vertical?'y-eksenini kesmez':`y-ekseni kesimi: x=0 koy → <strong>(0, ${fr(L.b,4)})</strong>`,
+    (!L.vertical&&xKes&&yKes)?`Alan = ½·|a|·|b| = ½·${fr(Math.abs(xKes.x),3)}·${fr(Math.abs(yKes.y),3)} = <strong>${alanStr}</strong>`:'—'
+  ]);
+  setLegend(eqStr(x1,y1,x2,y2),xKes?`x-kesim: (${fr(xKes.x,3)},0)`:null,yKes?`y-kesim: (0,${fr(yKes.y,3)})`:null);
+  drawState={type:'eksen',A:{x:x1,y:y1},B:{x:x2,y:y2},L,xKes,yKes};animateCanvas();
+}
+
+// ── LEGEND ────────────────────────────────────────────────────────
+function setLegend(l1,l2,l3){
+  document.getElementById('leg1').textContent=l1||'—';
+  const r2=document.getElementById('leg2-row'),r3=document.getElementById('leg3-row');
+  if(l2){r2.style.display='flex';document.getElementById('leg2').textContent=l2;}else r2.style.display='none';
+  if(l3){r3.style.display='flex';document.getElementById('leg3').textContent=l3;}else r3.style.display='none';
+  document.getElementById('legend').classList.add('show');
+}
+
+// ── QUIZ ──────────────────────────────────────────────────────────
+let qScore=0,qTotal=0,qAnswered=false;
+
+const quizBank=[
+  // Eğim
+  {q:'A(2, 3) ve B(6, 7) noktalarından geçen doğrunun eğimi kaçtır?',opts:['1','2','4','½'],ans:0,diff:'easy',type:'Eğim',exp:'m = (7-3)/(6-2) = 4/4 = 1'},
+  {q:'A(0, 0) ve B(3, 9) noktalarından geçen doğrunun eğimi nedir?',opts:['3','9','⅓','6'],ans:0,diff:'easy',type:'Eğim',exp:'m = (9-0)/(3-0) = 9/3 = 3'},
+  {q:'A(1, 5) ve B(4, 5) noktalarından geçen doğrunun eğimi nedir?',opts:['0','1','5','Tanımsız'],ans:0,diff:'easy',type:'Eğim',exp:'Δy = 5-5 = 0, yatay doğru → m = 0'},
+  {q:'A(3, 1) ve B(3, 7) noktalarından geçen doğrunun eğimi nedir?',opts:['Tanımsız (dikey)','0','6','2'],ans:0,diff:'easy',type:'Eğim',exp:'Δx = 3-3 = 0, dikey doğru → eğim tanımsız'},
+  // Mesafe
+  {q:'A(0, 0) ve B(3, 4) noktaları arasındaki mesafe kaçtır?',opts:['5','7','4','√7'],ans:0,diff:'easy',type:'Mesafe',exp:'d = √(3²+4²) = √(9+16) = √25 = 5'},
+  {q:'A(1, 1) ve B(4, 5) noktaları arasındaki mesafe nedir?',opts:['5','4','3','√7'],ans:0,diff:'medium',type:'Mesafe',exp:'d = √((4-1)²+(5-1)²) = √(9+16) = 5'},
+  {q:'A(2, 3) ve B(2, 8) noktaları arasındaki mesafe kaçtır?',opts:['5','4','√29','3'],ans:0,diff:'easy',type:'Mesafe',exp:'Δx=0, d = |8-3| = 5'},
+  // Denklem
+  {q:'Eğimi 2 olan ve (0, 3) noktasından geçen doğrunun denklemi nedir?',opts:['y = 2x + 3','y = 3x + 2','y = 2x − 3','y = x + 3'],ans:0,diff:'easy',type:'Denklem',exp:'y = mx + b → y = 2x + 3 (b=3 zaten y-kesimi)'},
+  {q:'A(0, 0) ve B(2, 4) noktalarından geçen doğrunun denklemi nedir?',opts:['y = 2x','y = 4x','y = x + 2','y = 2x + 4'],ans:0,diff:'easy',type:'Denklem',exp:'m = 4/2 = 2, orijinden geçtiği için b=0 → y = 2x'},
+  {q:'A(1, 2) ve B(3, 6) noktalarından geçen doğrunun denklemi nedir?',opts:['y = 2x','y = 2x + 1','y = 2x − 1','y = x + 2'],ans:0,diff:'medium',type:'Denklem',exp:'m=(6-2)/(3-1)=2, b=y1-m·x1=2-2=0 → y=2x'},
+  // Orta nokta
+  {q:'A(2, 4) ve B(6, 8) noktalarının orta noktası nedir?',opts:['(4, 6)','(3, 5)','(8, 12)','(2, 4)'],ans:0,diff:'easy',type:'Orta Nokta',exp:'M = ((2+6)/2, (4+8)/2) = (4, 6)'},
+  {q:'A(−2, 3) ve B(4, −1) noktalarının orta noktası nedir?',opts:['(1, 1)','(2, 2)','(−1, 2)','(1, −1)'],ans:0,diff:'medium',type:'Orta Nokta',exp:'M = ((-2+4)/2, (3-1)/2) = (1, 1)'},
+  // Uzaklık
+  {q:'P(0, 0) noktasının 3x + 4y − 10 = 0 doğrusuna uzaklığı nedir?',opts:['2','5','10','√25'],ans:0,diff:'medium',type:'Uzaklık',exp:'d = |3·0+4·0-10|/√(9+16) = 10/5 = 2'},
+  {q:'P(1, 2) noktasının 3x − 4y + 5 = 0 doğrusuna uzaklığı nedir?',opts:['0','1','2','5'],ans:0,diff:'medium',type:'Uzaklık',exp:'d = |3·1−4·2+5|/√(9+16) = |3-8+5|/5 = 0/5 = 0 → nokta doğru üzerinde!'},
+  {q:'P(2, 3) noktasının x − y + 1 = 0 doğrusuna uzaklığı nedir?',opts:['0','√2','√3','2'],ans:0,diff:'hard',type:'Uzaklık',exp:'d = |2-3+1|/√(1+1) = 0/√2 = 0 → nokta doğru üzerinde!'},
+  // Dik doğru
+  {q:'Eğimi 3 olan bir doğruya dik doğrunun eğimi nedir?',opts:['−⅓','3','⅓','−3'],ans:0,diff:'medium',type:'Dik Doğru',exp:'m⊥ = −1/m = −1/3'},
+  {q:'Eğimi −½ olan doğruya dik doğrunun eğimi nedir?',opts:['2','−2','½','−½'],ans:0,diff:'medium',type:'Dik Doğru',exp:'m⊥ = −1/(−½) = 2'},
+  {q:'y = 4x + 1 doğrusuna dik ve (0, 0) noktasından geçen doğrunun denklemi?',opts:['y = −¼x','y = 4x','y = ¼x','y = −4x'],ans:0,diff:'hard',type:'Dik Doğru',exp:'m⊥ = -1/4, b=0 → y = -¼x'},
+];
+
+let usedQ=[];
+function pickQuestion(){
+  if(usedQ.length>=quizBank.length)usedQ=[];
+  let idx;
+  do{idx=Math.floor(Math.random()*quizBank.length);}while(usedQ.includes(idx));
+  usedQ.push(idx);return quizBank[idx];
+}
+
+function nextQuestion(){
+  qAnswered=false;
+  const q=pickQuestion();
+  // shuffle options keeping track of answer
+  const indices=[0,1,2,3];
+  for(let i=indices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[indices[i],indices[j]]=[indices[j],indices[i]];}
+  const correctOpt=q.opts[q.ans];
+  const shuffled=indices.map(i=>q.opts[i]);
+  const newAns=shuffled.indexOf(correctOpt);
+  document.getElementById('q-text').innerHTML=q.q;
+  const diffEl=document.getElementById('q-difficulty');
+  diffEl.textContent=q.diff==='easy'?'Kolay':q.diff==='medium'?'Orta':'Zor';
+  diffEl.className='quiz-badge '+q.diff;
+  document.getElementById('q-type-label').textContent=q.type;
+  const optsEl=document.getElementById('q-opts');
+  optsEl.innerHTML='';
+  shuffled.forEach((opt,i)=>{
+    const btn=document.createElement('button');
+    btn.className='quiz-opt';btn.textContent=opt;
+    btn.onclick=()=>answerQ(i,newAns,q.exp,optsEl);
+    optsEl.appendChild(btn);
+  });
+  const fb=document.getElementById('q-feedback');fb.className='quiz-feedback';fb.textContent='';
+  document.getElementById('q-next-btn').classList.remove('show');
+  document.getElementById('q-next-btn').textContent='Sonraki Soru →';
+}
+
+function answerQ(chosen,correct,exp,optsEl){
+  if(qAnswered)return;qAnswered=true;qTotal++;
+  const btns=optsEl.querySelectorAll('.quiz-opt');
+  btns.forEach((b,i)=>{b.disabled=true;if(i===correct)b.classList.add('correct');else if(i===chosen)b.classList.add('wrong');});
+  const fb=document.getElementById('q-feedback');
+  if(chosen===correct){qScore++;fb.className='quiz-feedback show ok';fb.textContent='✓ Doğru! '+exp;}
+  else{fb.className='quiz-feedback show fail';fb.textContent='✗ Yanlış. '+exp;}
+  document.getElementById('qscore').textContent=qScore;
+  document.getElementById('qtotal').textContent=qTotal;
+  document.getElementById('qprogress').style.width=(qScore/Math.max(qTotal,1)*100)+'%';
+  document.getElementById('q-next-btn').classList.add('show');
+}
+
+// ── ANIMATION ─────────────────────────────────────────────────────
+function animateCanvas(){cancelAnimationFrame(animRaf);animT=0;function step(){animT=Math.min(animT+0.022,1);renderFrame(animT);if(animT<1)animRaf=requestAnimationFrame(step);}step();}
+function ease(t){return t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2}
+
+function renderFrame(t){
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f1117';ctx.fillRect(0,0,W,H);
+  if(!drawState){drawEmptyGrid(W,H);return;}
+  const et=ease(t),s=drawState;
+  if(s.type==='iki')drawIki(s,et,W,H);
+  else if(s.type==='dik')drawDik(s,et,W,H);
+  else if(s.type==='kesisim')drawKesisim(s,et,W,H);
+  else if(s.type==='uzaklik')drawUzaklik(s,et,W,H);
+  else if(s.type==='eksen')drawEksen(s,et,W,H);
+}
+
+// ── COORD HELPERS ─────────────────────────────────────────────────
+function setupCoords(pts,W,H){
+  const PAD=55*dpr;
+  let xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);xs.push(0);ys.push(0);
+  let minX=Math.min(...xs)-2.5,maxX=Math.max(...xs)+2.5;
+  let minY=Math.min(...ys)-2.5,maxY=Math.max(...ys)+2.5;
+  const rx=maxX-minX,ry=maxY-minY;
+  const sc=Math.min((W-PAD*2)/rx,(H-PAD*2)/ry);
+  const ox=PAD+(-minX)*sc,oy=H-PAD-(-minY)*sc;
+  return{sc,ox,oy,minX,maxX,minY,maxY,PAD,tx:x=>ox+x*sc,ty:y=>oy-y*sc};
+}
+function drawGrid(c,W,H){
+  const{tx,ty,minX,maxX,minY,maxY,ox,oy,PAD}=c;
+  for(let x=Math.ceil(minX);x<=Math.floor(maxX);x++){
+    ctx.beginPath();ctx.strokeStyle=x===0?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.04)';ctx.lineWidth=x===0?1.5*dpr:dpr;
+    ctx.moveTo(tx(x),PAD/2);ctx.lineTo(tx(x),H-PAD/2);ctx.stroke();
+    if(x!==0){ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font=`${10*dpr}px JetBrains Mono,monospace`;ctx.textAlign='center';ctx.fillText(x,tx(x),oy+14*dpr);}
+  }
+  for(let y=Math.ceil(minY);y<=Math.floor(maxY);y++){
+    ctx.beginPath();ctx.strokeStyle=y===0?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.04)';ctx.lineWidth=y===0?1.5*dpr:dpr;
+    ctx.moveTo(PAD/2,ty(y));ctx.lineTo(W-PAD/2,ty(y));ctx.stroke();
+    if(y!==0){ctx.fillStyle='rgba(255,255,255,0.2)';ctx.font=`${10*dpr}px JetBrains Mono,monospace`;ctx.textAlign='right';ctx.fillText(y,ox-8*dpr,ty(y)+4*dpr);}
+  }
+  const ah=7*dpr;
+  ctx.strokeStyle='rgba(255,255,255,0.18)';ctx.lineWidth=1.5*dpr;
+  ctx.beginPath();ctx.moveTo(PAD/2,oy);ctx.lineTo(W-PAD/2,oy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox,H-PAD/2);ctx.lineTo(ox,PAD/2);ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.3)';
+  ctx.beginPath();ctx.moveTo(W-PAD/2,oy);ctx.lineTo(W-PAD/2-ah,oy-ah/2);ctx.lineTo(W-PAD/2-ah,oy+ah/2);ctx.fill();
+  ctx.beginPath();ctx.moveTo(ox,PAD/2);ctx.lineTo(ox-ah/2,PAD/2+ah);ctx.lineTo(ox+ah/2,PAD/2+ah);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.35)';ctx.font=`${12*dpr}px Space Grotesk,sans-serif`;
+  ctx.textAlign='left';ctx.fillText('x',W-PAD/2+4*dpr,oy+4*dpr);ctx.textAlign='center';ctx.fillText('y',ox,PAD/2-5*dpr);
+}
+function drawLine(c,line,color,alpha,dashed,W,H){
+  ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=2*dpr;
+  if(dashed)ctx.setLineDash([7*dpr,5*dpr]);
+  ctx.beginPath();
+  if(line.vertical){ctx.moveTo(c.tx(line.x),0);ctx.lineTo(c.tx(line.x),H);}
+  else{const xl=c.minX-6,xr=c.maxX+6;ctx.moveTo(c.tx(xl),c.ty(line.m*xl+line.b));ctx.lineTo(c.tx(xr),c.ty(line.m*xr+line.b));}
+  ctx.stroke();ctx.setLineDash([]);ctx.restore();
+}
+function drawPoint(c,x,y,color,label,t=1){
+  const px=c.tx(x),py=c.ty(y);
+  ctx.save();ctx.globalAlpha=t;
+  const g=ctx.createRadialGradient(px,py,0,px,py,16*dpr);
+  g.addColorStop(0,color+'55');g.addColorStop(1,color+'00');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(px,py,16*dpr,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle=color;ctx.strokeStyle='#0f1117';ctx.lineWidth=2*dpr;
+  ctx.beginPath();ctx.arc(px,py,5.5*dpr,0,Math.PI*2);ctx.fill();ctx.stroke();
+  if(label&&t>0.5){ctx.globalAlpha=Math.min((t-0.5)*2,1);ctx.fillStyle='#eef0f8';ctx.font=`bold ${11*dpr}px Space Grotesk,sans-serif`;ctx.textAlign='center';ctx.fillText(label,px,py-12*dpr);}
+  ctx.restore();
+}
+
+// ── DRAW FUNCTIONS ────────────────────────────────────────────────
+function drawIki(s,t,W,H){
+  const mx=(s.A.x+s.B.x)/2,my=(s.A.y+s.B.y)/2;
+  const c=setupCoords([s.A,s.B,{x:mx,y:my}],W,H);
+  drawGrid(c,W,H);
+  const L=lineFromTwoPoints(s.A.x,s.A.y,s.B.x,s.B.y);
+  drawLine(c,L,'#6c63ff',0.18*t,true,W,H);
+  const Bxi=s.A.x+(s.B.x-s.A.x)*t,Byi=s.A.y+(s.B.y-s.A.y)*t;
+  ctx.save();ctx.globalAlpha=t;ctx.strokeStyle='#6c63ff';ctx.lineWidth=2.5*dpr;
+  ctx.beginPath();ctx.moveTo(c.tx(s.A.x),c.ty(s.A.y));ctx.lineTo(c.tx(Bxi),c.ty(Byi));ctx.stroke();ctx.restore();
+  if(t>0.8)drawPoint(c,mx,my,'#00e5a0',`M(${fr(mx,2)},${fr(my,2)})`,(t-0.8)*5);
+  drawPoint(c,s.A.x,s.A.y,'#6c63ff',`A(${s.A.x},${s.A.y})`,1);
+  drawPoint(c,Bxi,Byi,'#ff8c42',t>0.9?`B(${s.B.x},${s.B.y})`:null,t);
+}
+function drawDik(s,t,W,H){
+  const pts=[s.P,{x:s.P.x+3,y:s.origLine.m?s.origLine.m*(s.P.x+3)+s.origLine.b:s.P.y},{x:s.P.x-3,y:s.origLine.m?s.origLine.m*(s.P.x-3)+s.origLine.b:s.P.y}];
+  const c=setupCoords(pts,W,H);drawGrid(c,W,H);
+  drawLine(c,s.origLine,'#6c63ff',0.7*t,false,W,H);
+  if(t>0.35)drawLine(c,s.perpLine,'#ff8c42',((t-0.35)/0.65)*0.9,false,W,H);
+  if(t>0.7&&!s.origLine.vertical&&!s.perpLine.vertical){
+    const px=c.tx(s.P.x),py=c.ty(s.P.y),sz=12*dpr;
+    ctx.save();ctx.globalAlpha=(t-0.7)/0.3;ctx.strokeStyle='#fff';ctx.lineWidth=dpr;
+    ctx.translate(px,py);ctx.rotate(-Math.atan2(s.origLine.m,1));ctx.strokeRect(0,-sz,sz,sz);ctx.restore();
+  }
+  drawPoint(c,s.P.x,s.P.y,'#4dc9f6',`P(${s.P.x},${s.P.y})`,t);
+}
+function drawKesisim(s,t,W,H){
+  const c=setupCoords([s.P1a,s.P1b,s.P2a,s.P2b,s.pt],W,H);drawGrid(c,W,H);
+  drawLine(c,s.L1,'#6c63ff',0.8*t,false,W,H);
+  if(t>0.3)drawLine(c,s.L2,'#ff8c42',((t-0.3)/0.7)*0.8,false,W,H);
+  if(t>0.6){const kt=(t-0.6)/0.4;const px=c.tx(s.pt.x),py=c.ty(s.pt.y);ctx.save();ctx.globalAlpha=0.15*(1-kt);ctx.fillStyle='#00e5a0';ctx.beginPath();ctx.arc(px,py,28*dpr*kt,0,Math.PI*2);ctx.fill();ctx.restore();drawPoint(c,s.pt.x,s.pt.y,'#00e5a0',`K(${fr(s.pt.x,3)},${fr(s.pt.y,3)})`,kt);}
+  drawPoint(c,s.P1a.x,s.P1a.y,'#6c63ff',null,t);drawPoint(c,s.P1b.x,s.P1b.y,'#6c63ff',null,t);
+  if(t>0.3){drawPoint(c,s.P2a.x,s.P2a.y,'#ff8c42',null,(t-0.3)/0.7);drawPoint(c,s.P2b.x,s.P2b.y,'#ff8c42',null,(t-0.3)/0.7);}
+}
+function drawUzaklik(s,t,W,H){
+  const pts=[s.P,s.foot,{x:s.foot.x+2,y:s.line.vertical?s.foot.y+2:s.line.m*(s.foot.x+2)+s.line.b},{x:s.foot.x-2,y:s.line.vertical?s.foot.y-2:s.line.m*(s.foot.x-2)+s.line.b}];
+  const c=setupCoords(pts,W,H);drawGrid(c,W,H);
+  drawLine(c,s.line,'#6c63ff',0.8*t,false,W,H);
+  // dashed perpendicular segment P→foot
+  if(t>0.3){
+    const ft=(t-0.3)/0.7;
+    const fx=s.P.x+(s.foot.x-s.P.x)*ft,fy=s.P.y+(s.foot.y-s.P.y)*ft;
+    ctx.save();ctx.globalAlpha=ft*0.9;ctx.strokeStyle='#4dc9f6';ctx.lineWidth=1.8*dpr;ctx.setLineDash([5*dpr,4*dpr]);
+    ctx.beginPath();ctx.moveTo(c.tx(s.P.x),c.ty(s.P.y));ctx.lineTo(c.tx(fx),c.ty(fy));ctx.stroke();ctx.setLineDash([]);ctx.restore();
+    // distance label at midpoint
+    if(ft>0.8){
+      const mx2=(s.P.x+s.foot.x)/2,my2=(s.P.y+s.foot.y)/2;
+      ctx.save();ctx.globalAlpha=(ft-0.8)*5;ctx.fillStyle='#4dc9f6';ctx.font=`bold ${11*dpr}px Space Grotesk,sans-serif`;ctx.textAlign='left';
+      ctx.fillText(`d=${fr(s.dist,3)}`,c.tx(mx2)+8*dpr,c.ty(my2));ctx.restore();
+    }
+  }
+  drawPoint(c,s.P.x,s.P.y,'#ff4d6d',`P(${s.P.x},${s.P.y})`,t);
+  if(t>0.5)drawPoint(c,s.foot.x,s.foot.y,'#4dc9f6',`H(${fr(s.foot.x,2)},${fr(s.foot.y,2)})`,(t-0.5)*2);
+}
+function drawEksen(s,t,W,H){
+  const pts=[s.A,s.B];
+  if(s.xKes)pts.push(s.xKes);if(s.yKes)pts.push(s.yKes);
+  const c=setupCoords(pts,W,H);drawGrid(c,W,H);
+  drawLine(c,s.L,'#6c63ff',0.8*t,false,W,H);
+  const Bxi=s.A.x+(s.B.x-s.A.x)*t,Byi=s.A.y+(s.B.y-s.A.y)*t;
+  drawPoint(c,s.A.x,s.A.y,'#6c63ff',`A(${s.A.x},${s.A.y})`,1);
+  drawPoint(c,Bxi,Byi,'#ff8c42',t>0.85?`B(${s.B.x},${s.B.y})`:null,t);
+  if(s.xKes&&t>0.5){
+    const kt=(t-0.5)*2;
+    // highlight x-intercept
+    ctx.save();ctx.globalAlpha=kt*0.2;ctx.fillStyle='#ff8c42';ctx.beginPath();ctx.arc(c.tx(s.xKes.x),c.ty(0),10*dpr,0,Math.PI*2);ctx.fill();ctx.restore();
+    drawPoint(c,s.xKes.x,0,'#ff8c42',`(${fr(s.xKes.x,3)},0)`,kt);
+  }
+  if(s.yKes&&t>0.65){
+    const kt=(t-0.65)/0.35;
+    ctx.save();ctx.globalAlpha=kt*0.2;ctx.fillStyle='#00e5a0';ctx.beginPath();ctx.arc(c.tx(0),c.ty(s.yKes.y),10*dpr,0,Math.PI*2);ctx.fill();ctx.restore();
+    drawPoint(c,0,s.yKes.y,'#00e5a0',`(0,${fr(s.yKes.y,3)})`,kt);
+  }
+  // triangle fill
+  if(s.xKes&&s.yKes&&t>0.8){
+    const kt=(t-0.8)*5;
+    ctx.save();ctx.globalAlpha=0.06*Math.min(kt,1);ctx.fillStyle='#6c63ff';
+    ctx.beginPath();ctx.moveTo(c.tx(0),c.ty(0));ctx.lineTo(c.tx(s.xKes.x),c.ty(0));ctx.lineTo(c.tx(0),c.ty(s.yKes.y));ctx.closePath();ctx.fill();ctx.restore();
+  }
+}
+function drawEmptyGrid(W,H){
+  const cx=W/2,cy=H/2,step=Math.floor(Math.min(W,H)/12);
+  ctx.strokeStyle='rgba(255,255,255,0.035)';ctx.lineWidth=dpr;
+  for(let x=cx%step;x<W;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=cy%step;y<H;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=1.5*dpr;
+  ctx.beginPath();ctx.moveTo(40*dpr,cy);ctx.lineTo(W-40*dpr,cy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,40*dpr);ctx.lineTo(cx,H-40*dpr);ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,0.1)';ctx.font=`${13*dpr}px Space Grotesk,sans-serif`;ctx.textAlign='center';
+  ctx.fillText('Koordinatları girin ve Hesapla\'ya tıklayın',cx,cy-18*dpr);
+}
+
+// Init
+resize();
+document.querySelectorAll('input').forEach(inp=>{
+  inp.addEventListener('keydown',e=>{
+    if(e.key!=='Enter')return;
+    const map={iki:calcIki,dik:calcDik,kesisim:calcKesisim,uzaklik:calcUzaklik,eksen:calcEksen};
+    if(map[currentTab])map[currentTab]();
+  });
+});
+</script>
+</body>
+</html>
